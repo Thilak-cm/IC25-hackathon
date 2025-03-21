@@ -47,7 +47,7 @@ This project introduces an **AI-powered Parking Guidance Chatbot** that leverage
 ---
 
 ## Interactive UI
-The system includes an intuitive UI with an interactive map of UMD’s campus featuring all parking lots. Key features include:
+The system includes an intuitive UI with an interactive map of UMD's campus featuring all parking lots. Key features include:
 - **Color-Coded Map**:
   - Parking lots are color-coded based on their permission types.
 - **User Input**:
@@ -71,7 +71,12 @@ The system includes an intuitive UI with an interactive map of UMD’s campus fe
    Apply anomaly detection models to monitor unusual parking patterns or rule violations, enabling proactive enforcement and maintenance scheduling.
 
 4. **Scenario Simulation & Forecasting**  
-   Build simulation models for “what-if” analyses to predict how changes in parking policies or campus events might impact parking availability and compliance.
+   Build simulation models for "what-if" analyses to predict how changes in parking policies or campus events might impact parking availability and compliance.
 
 ---
+
+## Environment Setup
+1. Copy `.env.example` to `.env`
+2. Add your OpenAI API key to `.env`
+3. Never commit `.env` file
 
