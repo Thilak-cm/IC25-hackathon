@@ -1,0 +1,14 @@
+/* Reset default margins and set a dark background */
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #212020; /* Dark background for entire page */
+  font-family: 'Figtree', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Keep code blocks with a monospaced font */
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}

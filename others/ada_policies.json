@@ -1,0 +1,76 @@
+{
+  "ADA_Policies": {
+    "General": {
+      "Visitor": {
+        "parking_spaces": "Designated visitor spaces, including ADA-accessible spaces.",
+        "metered_parking": "Twice the listed time OR 4 hours, whichever is shorter. No payment required.",
+        "pay_station_parking": "Allowed in visitor pay station spaces, including ADA spaces. Payment required."
+      },
+      "Faculty_Staff": {
+        "without_permit": {
+          "parking_spaces": "Same as visitors: Designated visitor spaces, including ADA-accessible spaces.",
+          "metered_parking": "Same as visitors: Twice the listed time OR 4 hours, whichever is shorter. No payment required.",
+          "pay_station_parking": "Allowed in visitor pay station spaces, including ADA spaces. Payment required."
+        },
+        "with_annual_permit": {
+          "assigned_permissions": ["P"],
+          "ungated_lot_parking": "Allowed in any ungated lot (lettered or numbered), including disabled spaces.",
+          "metered_parking": "No payment required.",
+          "pay_station_parking": "No payment required.",
+          "overflow_lots": ["K", "P", "U", "V", "X", "XX1", "Z", "SDG", "Any numbered lot except Lot 2"],
+          "license_plate_registration": {
+            "max_vehicles": 4,
+            "note": "Only one vehicle allowed per permit at a time."
+          }
+        },
+        "with_semester_permit": {
+          "assigned_permissions": ["Q"],
+          "same_perks_as": "with_annual_permit"
+        },
+        "with_3_day_permit": {
+          "daily_permits": 48,
+          "valid_lots": ["K", "P", "U", "V", "X1", "XX1", "Z", "Stadium Drive Garage", "Any numbered lot except Lot 2"],
+          "same_perks_as": "with_annual_permit"
+        }
+      },
+      "Student": {
+        "without_permit": {
+          "parking_spaces": "Same as visitors: Designated visitor spaces, including ADA-accessible spaces.",
+          "metered_parking": "Same as visitors: Twice the listed time OR 4 hours, whichever is shorter. No payment required.",
+          "pay_station_parking": "Allowed in visitor pay station spaces, including ADA spaces. Payment required."
+        },
+        "with_resident_annual_permit": {
+          "assigned_permissions": ["Lot 16"],
+          "ungated_lot_parking": "Allowed in any ungated lot (lettered or numbered), including disabled spaces.",
+          "metered_parking": "No payment required.",
+          "pay_station_parking": "No payment required.",
+          "license_plate_registration": {
+            "max_vehicles": 4,
+            "note": "Only one vehicle allowed per permit at a time."
+          },
+          "special_event_accommodations": {
+            "required_relocations": true,
+            "applicable_events": ["Home football games", "Home basketball games", "Major campus events"],
+            "exception_policy": "Academic conflicts can be submitted to DOTS prior to the event."
+          }
+        },
+        "with_semester_overnight_storage_permit": {
+          "assigned_permissions": ["Lot 17"],
+          "same_perks_as": "with_resident_annual_permit",
+          "overnight_parking": {
+            "lots": [
+              "P2", "NN", "P1", "RR2", "XX1", "K7", "YY", "DD", "FF2",
+              "CC1", "CC2", "H", "B", "RR", "Q", "Q1", "Z", "JJ3", "JJ2",
+              "O5", "U2", "C1", "L", "C2", "S9", "J1", "N5", "K5"
+            ],
+            "hours": "4 PM - 7 AM"
+          }
+        },
+        "with_annual_overnight_storage_permit": {
+          "assigned_permissions": ["Lot 11"],
+          "same_perks_as": "with_semester_overnight_storage_permit"
+        }
+      }
+    }
+  }
+}

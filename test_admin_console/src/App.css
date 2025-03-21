@@ -1,0 +1,416 @@
+/* Import Figtree from Google Fonts if not already imported */
+/* @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap'); */
+
+/* Reset & Global Styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  font-family: 'Figtree', sans-serif;
+}
+
+/* =============================
+   Navbar
+   ============================= */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background-color: #181818;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 11000;
+  border-bottom: 1px solid #555;
+}
+
+.navbar .nav-logo {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #e3e3e3;
+}
+
+.navbar .profile-cta {
+  background-color: #d43e3e;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.navbar .profile-cta:hover {
+  background-color: #d43e3e;
+}
+
+/* =============================
+   2) Header & headings
+   ============================= */
+.header {
+  margin-left: 100px;
+  margin-bottom: 20px;
+  font-size: 1.8em;
+  font-weight: 700;
+  color: #e3e3e3;
+}
+.header1 {
+  margin-bottom: 20px;
+  font-size: 1.8em;
+  font-weight: 700;
+  color: #e3e3e3;
+}
+
+/* =============================
+   3) Form styling
+   ============================= */
+.form {
+  background-color: #181818;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px auto;
+  width: 100%;
+  max-width: 800px;
+}
+
+.label {
+  display: block;
+  text-align: left;
+  margin: 10px 0 5px;
+  font-weight: 600;
+  color: #868686;
+}
+
+/* =============================
+   3a) Inputs 
+   ============================= */
+.input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 30px;
+  background-color: #262525;
+  color: #E0E0E0;
+  transition: border-color 0.3s;
+}
+
+.input:hover {
+  border: 1px solid red;
+}
+
+.input:focus {
+  outline: none;
+  border: 1px solid red;
+}
+
+/* =============================
+   3b) Buttons
+   ============================= */
+.buttonContainer {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.button {
+  background-color: #d43e3e;
+  color: #ffffff;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  margin: 5px;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.button:hover {
+  background-color: #d43e3e;
+}
+
+/* =============================
+   4) Data containers & tables
+   ============================= */
+.dataContainer {
+  background-color: #181818;
+  border: 1px solid #181818;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px auto;
+  width: 100%;
+  max-width: 800px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.th, .td {
+  border: 1px solid #555;
+  padding: 10px;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.th {
+  background-color: #181818;
+  color: #868686;
+}
+
+.td {
+  background-color: #181818;
+  color: #868686;
+}
+
+.deleteColumn {
+  text-align: center;
+}
+
+/* Updated delete button using a pseudo-element for a trash icon */
+.deleteButton {
+  background-color: #E11933;
+  color: transparent;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 5px 10px;
+  position: relative;
+}
+
+.deleteButton::before {
+  content: "\1F5D1";
+  font-size: 16px;
+  color: #868686;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.deleteButton:hover {
+  background-color: #d43e3e;
+}
+
+/* =============================
+   5) Alert logs & notifications
+   ============================= */
+.alertLogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alertRow {
+  position: relative;
+}
+
+.alertId {
+  font-size: 0.9em;
+  color: #ccc;
+  margin-left: 5px;
+}
+
+/* Apple-style Notification UI */
+.notificationContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  z-index: 9999;
+}
+
+.notification {
+  position: relative;
+  min-width: 250px;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  animation: slideDown 0.5s ease-out;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  color: #000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.notification.error {
+  border-left: 5px solid #FF3B30;
+}
+
+.notification.success {
+  border-left: 5px solid #34C759;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =============================
+   6) ChipMultiSelect (e.g., lots, permits dropdowns)
+   ============================= */
+.chipContainer {
+  position: relative;
+  border: 1px solid #555;
+  border-radius: 30px;
+  background-color: #181818;
+  color: #868686;
+  padding: 10px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  transition: border-color 0.3s;
+}
+
+.chipContainer:hover,
+.chipContainer:focus-within {
+  border-color: #E11933;
+}
+
+.chipSelectedContainer {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: 8px;
+}
+
+.chipSelected {
+  background-color: #262525;
+  color: #868686;
+  padding: 5px 10px;
+  margin: 2px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.chipRemove {
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.chipInput {
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: #E0E0E0;
+  flex: 1;
+  min-width: 80px;
+  padding: 5px;
+}
+
+.chipDropdown {
+  border: 1px solid #555;
+  background: #181818;
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  width: 100%;
+  z-index: 9999;
+  border-radius: 8px;
+}
+
+.chipDropdownItem {
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #868686;
+}
+
+.chipDropdownItem:hover {
+  background-color: #E11933;
+  color: #fff;
+}
+
+/* =============================
+   7) Category dropdown
+   ============================= */
+.selectCategoryRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.selectCategoryRow label {
+  color: #868686;
+  font-weight: 600;
+}
+
+.categorySelect {
+  padding: 10px;
+  border: 1px solid #555;
+  border-radius: 30px;
+  background-color: #181818;
+  color: #868686;
+  transition: border-color 0.3s;
+  padding-right: 40px;
+  line-height: 1.5;
+  overflow: visible;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.categorySelect:hover {
+  border-color: #E11933;
+}
+
+.categorySelect:focus {
+  border-color: #E11933;
+}
+
+select option {
+  background-color: #181818;
+  color: #868686;
+}
+
+/* =============================
+   8) Two-column layout with a fixed left image panel
+   ============================= */
+.layoutContainer {
+  display: block;
+}
+
+.leftPanel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 700px;
+  height: 100vh;
+  background: url('assets/image2.png') center center / cover no-repeat;
+  background-color: #2e2e2e;
+  transition: transform 0.3s ease;
+}
+
+.leftPanel:hover {
+  transform: scale(1.05);
+}
+
+.leftPanelOverlay {
+  display: none;
+}
+
+.rightPanel {
+  margin-left: 700px;
+  padding: 20px;
+  background-color: #181818;
+  min-height: 100vh;
+  overflow-y: auto;
+}

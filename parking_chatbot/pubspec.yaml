@@ -1,0 +1,16 @@
+name: parking_chatbot
+description: Parking chatbot with improved UI
+version: 1.0.0
+
+environment:
+  sdk: ">=2.12.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.13.5
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/umd.ico
