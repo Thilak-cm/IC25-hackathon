@@ -11,13 +11,7 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timedelta, time as time_cls
 from openai import OpenAI
 from sentence_transformers import SentenceTransformer
-from dotenv import load_dotenv
-
-
-#########################could 
-#   CONFIG / PATHS
-#########################
-
+from dotenv.main import load_dotenv
 load_dotenv()
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")

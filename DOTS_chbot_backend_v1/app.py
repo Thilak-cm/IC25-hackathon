@@ -11,8 +11,8 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timedelta, time as time_cls
 from openai import OpenAI
 from sentence_transformers import SentenceTransformer
-import load_dotenv
-
+from dotenv.main import load_dotenv
+from flask_cors import CORS
 load_dotenv()
 
 
@@ -47,6 +47,7 @@ search_model = SentenceTransformer("all-MiniLM-L6-v2")
 #########################
 
 app = Flask(__name__)
+CORS(app)
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -737,4 +738,4 @@ def get_ada_policy_endpoint():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 2000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=2000, debug=True)

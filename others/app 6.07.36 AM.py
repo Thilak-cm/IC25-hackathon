@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta, time as time_cls
-import load_dotenv
+from dotenv.main import load_dotenv
 
 load_dotenv()
 
