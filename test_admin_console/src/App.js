@@ -91,7 +91,32 @@ function CategoryTable({ categoryName, categoryData, onDelete, viewMode }) {
 
   const rows = [];
   Object.entries(categoryData).forEach(([lot, ruleObj]) => {
-    // Only add active rules if viewing active
+    // Special handling for Closed category
+    if (categoryName === 'Closed') {
+      if (viewMode === 'active' && ruleObj.active) {
+        rows.push({
+          lot,
+          timeFrame: 'Full Day', // Closed lots are closed for the full day
+          permits: 'None',
+          endDay: ruleObj.active['End Day'],
+          endTime: ruleObj.active['End Time'],
+          status: 'active'
+        });
+      }
+      if (viewMode === 'pending' && ruleObj.pending) {
+        rows.push({
+          lot,
+          timeFrame: 'Full Day',
+          permits: 'None',
+          endDay: ruleObj.pending.end_day,
+          endTime: ruleObj.pending.end_time,
+          status: 'pending'
+        });
+      }
+      return;
+    }
+
+    // Existing code for other categories
     if (viewMode === 'active' && ruleObj.active) {
       const endDay = ruleObj.active['End Day'] || '';
       const endTime = ruleObj.active['End Time'] || '';
@@ -107,7 +132,6 @@ function CategoryTable({ categoryName, categoryData, onDelete, viewMode }) {
         });
       });
     }
-    // Only add pending rules if viewing pending
     if (viewMode === 'pending' && ruleObj.pending) {
       rows.push({
         lot,
