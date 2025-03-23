@@ -612,7 +612,7 @@ def check_eligibility():
         return jsonify(allowed=False, message=msg), 200
 
 #########################
-#   NEW HELPER FUNCTIONS (IPYNB)
+#   NEW HELPER FUNCTIONS 
 #########################
 
 def check_for_closures(lot, date_input):
@@ -627,12 +627,35 @@ def check_for_closures(lot, date_input):
     except ValueError:
         return False, f"{BOT_NAME}: The date format is incorrect. Please try again."
 
+    # First check existing closures from CSV
     lot_closures = closures_df[closures_df['Affected Lot/Populations'] == lot]
     for _, row in lot_closures.iterrows():
         start_date = datetime.strptime(row['Start Date'], '%m/%d/%Y')
         end_date = datetime.strptime(row['End Date'], '%m/%d/%Y')
         if start_date <= input_date <= end_date:
-            return True, row['Closure Type']
+            return True, "Construction Closure: This lot is currently closed due to construction."
+
+    # Check for closures from get_new_rules API
+    try:
+        response = requests.get('http://localhost:1000/get_new_rules')
+        rules_dict = response.json()
+        
+        if 'Closed' in rules_dict:
+            if lot in rules_dict['Closed']:
+                # Check if there's an active closure
+                if 'active' in rules_dict['Closed'][lot]:
+                    closure_data = rules_dict['Closed'][lot]['active']
+                    end_day = datetime.strptime(closure_data['End Day'], '%Y-%m-%d')
+                    
+                    # If the input date is before or equal to end day, the lot is closed
+                    if input_date.date() <= end_day.date():
+                        return True, "Administrative Closure: This lot is currently closed due to a new parking rule"
+
+    except Exception as e:
+        print(f"Error checking API closures: {e}")
+        # Continue with normal flow if API check fails
+        pass
+
     return False, None
 
 def get_parking_details(lot_name):

@@ -424,8 +424,9 @@ def log_alert_to_db(msg, details):
 
 init_db()
 
+
 ################################################################
-# New endpoint: Return LOTS and PERMS from CSV
+# Flask endpoints
 ################################################################
 @app.route('/get_lot_perms', methods=['GET'])
 def get_lot_perms():
@@ -434,9 +435,6 @@ def get_lot_perms():
         "PERM_NAMES": PERMS
     })
 
-################################################################
-# Flask endpoints
-################################################################
 @app.route('/get_new_rules', methods=['GET'])
 def get_new_rules():
     # First combine active and pending rules
