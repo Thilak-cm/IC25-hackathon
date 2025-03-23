@@ -243,7 +243,7 @@ def check_for_closures(lot, date_input):
         start_date = datetime.strptime(row['Start Date'], '%m/%d/%Y')
         end_date = datetime.strptime(row['End Date'], '%m/%d/%Y')
         if start_date <= input_date <= end_date:
-            return True, row['Reason']
+            return True, f"Logistics Closure: This lot is currently closed due to {lot_closures['Closure Type'].iloc[0]}"
 
     # Check for closures from get_new_rules API
     try:
@@ -703,13 +703,28 @@ def paraphrase_endpoint():
 
 @app.route('/check_closures', methods=['POST'])
 def check_closures_endpoint():
-    data = request.get_json(force=True)
-    lot = data.get("lot")
-    date_input = data.get("date")
-    if not lot or not date_input:
-        return jsonify(error="Missing 'lot' or 'date' in request."), 400
-    closed, closure_type = check_for_closures(lot, date_input)
-    return jsonify(lot=lot, date=date_input, closed=closed, closure_type=closure_type), 200
+    try:
+        data = request.get_json(force=True)
+        lot = data.get("lot")
+        date_input = data.get("date")
+        if not lot or not date_input:
+            return jsonify(error="Missing 'lot' or 'date' in request."), 400
+            
+        # Standardize date format
+        try:
+            if date_input.lower() in ['today', 'tomorrow']:
+                pass  # handled in check_for_closures
+            else:
+                # Convert from MM-DD-YYYY to MM/DD/YYYY
+                date_parts = date_input.split('-')
+                date_input = '/'.join(date_parts)
+        except Exception as e:
+            return jsonify(error=f"Date parsing error: {str(e)}"), 400
+
+        closed, closure_type = check_for_closures(lot, date_input)
+        return jsonify(lot=lot, date=date_input, closed=closed, closure_type=closure_type), 200
+    except Exception as e:
+        return jsonify(error=f"Server error: {str(e)}"), 500
 
 @app.route('/search_restrictions', methods=['POST'])
 def search_restrictions_endpoint():
