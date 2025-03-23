@@ -43,16 +43,7 @@ faiss_metadata = np.load("metadata.npy", allow_pickle=True)
 search_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 #########################
-#   FLASK APP
-#########################
-
-app = Flask(__name__)
-CORS(app)
-
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-#########################
-#   PREPROCESSING FUNCTIONS
+#   CORE DATA PROCESSING
 #########################
 
 def build_prefix_mapper(csv_file_path):
@@ -148,34 +139,8 @@ def preprocessing_data(file_path, model_path, perm_path):
     return parsed_data, model, output_columns, lot_names, map_prefix_to_permission
 
 #########################
-#   HELPER FUNCTIONS
+#   GPT HELPERS
 #########################
-
-def generate_lot_coordinates(lot_names):
-    return {lot: (random.randint(0, 100), random.randint(0, 100)) for lot in lot_names}
-
-def calculate_distance(coord1, coord2):
-    return np.sqrt((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)
-
-def suggest_nearest_lots(closed_lot, lot_coordinates):
-    closed_coord = lot_coordinates[closed_lot]
-    distances = {
-        lot: calculate_distance(closed_coord, coord)
-        for lot, coord in lot_coordinates.items()
-        if lot != closed_lot
-    }
-    return sorted(distances, key=distances.get)[:20]
-
-def extract_prefix(permit_no: str) -> str:
-    return permit_no[:-5]
-
-def validate_permit(permit: str):
-    prefix = extract_prefix(permit)
-    if not prefix:
-        return None, "Sorry, that doesn't look like a valid permit format. Please double-check the number."
-    if prefix not in map_prefix_to_permission:
-        return None, f"Hmm, I don't recognize the prefix '{prefix}'. Try another permit."
-    return prefix, None
 
 def process_user_response_gpt(user_text: str, options: list):
     try:
@@ -246,9 +211,128 @@ def paraphrase_prompt(input_text, sys_msg=system_message):
         return input_text  # Fallback to the original input in case of an error
 
 #########################
-#   ORIGINAL ENDPOINTS
+#   PARKING VALIDATION
 #########################
 
+def validate_permit(permit: str):
+    prefix = extract_prefix(permit)
+    if not prefix:
+        return None, "Sorry, that doesn't look like a valid permit format. Please double-check the number."
+    if prefix not in map_prefix_to_permission:
+        return None, f"Hmm, I don't recognize the prefix '{prefix}'. Try another permit."
+    return prefix, None
+
+def extract_prefix(permit_no: str) -> str:
+    return permit_no[:-5]
+
+def check_for_closures(lot, date_input):
+    BOT_NAME = "Parking Assistant"
+    try:
+        if date_input.lower() == 'today':
+            input_date = datetime.now()
+        elif date_input.lower() == 'tomorrow':
+            input_date = datetime.now() + timedelta(days=1)
+        else:
+            input_date = datetime.strptime(date_input, '%m-%d-%Y')
+    except ValueError:
+        return False, f"{BOT_NAME}: The date format is incorrect. Please try again."
+
+    # First check existing closures from CSV
+    lot_closures = closures_df[closures_df['Affected Lot/Populations'] == lot]
+    for _, row in lot_closures.iterrows():
+        start_date = datetime.strptime(row['Start Date'], '%m/%d/%Y')
+        end_date = datetime.strptime(row['End Date'], '%m/%d/%Y')
+        if start_date <= input_date <= end_date:
+            return True, row['Reason']
+
+    # Check for closures from get_new_rules API
+    try:
+        response = requests.get('http://localhost:1000/get_new_rules')
+        rules_dict = response.json()
+        
+        if 'Closed' in rules_dict:
+            if lot in rules_dict['Closed']:
+                # Check if there's an active closure
+                if 'active' in rules_dict['Closed'][lot]:
+                    closure_data = rules_dict['Closed'][lot]['active']
+                    end_day = datetime.strptime(closure_data['End Day'], '%Y-%m-%d')
+                    
+                    # If the input date is before or equal to end day, the lot is closed
+                    if input_date.date() <= end_day.date():
+                        return True, "Administrative Closure: This lot is currently closed due to a new parking rule"
+
+    except Exception as e:
+        print(f"Error checking API closures: {e}")
+        # Continue with normal flow if API check fails
+        pass
+
+    return False, None
+
+#########################
+#   LOT MANAGEMENT
+#########################
+
+def generate_lot_coordinates(lot_names):
+    return {lot: (random.randint(0, 100), random.randint(0, 100)) for lot in lot_names}
+
+def calculate_distance(coord1, coord2):
+    return np.sqrt((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)
+
+def suggest_nearest_lots(closed_lot, lot_coordinates):
+    closed_coord = lot_coordinates[closed_lot]
+    distances = {
+        lot: calculate_distance(closed_coord, coord)
+        for lot, coord in lot_coordinates.items()
+        if lot != closed_lot
+    }
+    return sorted(distances, key=distances.get)[:20]
+
+def get_parking_details(lot_name):
+    lot_info = parking_restrictions_df[parking_restrictions_df["Parking Lot / Zone Name"] == lot_name]
+    if lot_info.empty:
+        return "No additional parking details found for this lot."
+    relevant_columns = ["Restrictions", "Required", "Parking Restrictions", "Overflow Lot"]
+    selected_data = lot_info.iloc[0][relevant_columns].dropna()
+    details_text = "\n".join([f"**{col}**: {val}" for col, val in selected_data.items()])
+    return details_text
+
+def search_parking_restrictions(query_json, top_k=3):
+    query_text = json.dumps(query_json, indent=2)
+    query_embedding = search_model.encode([query_text], convert_to_numpy=True)
+    distances, indices = faiss_index.search(query_embedding.astype(np.float32), top_k)
+    results = []
+    for i, idx in enumerate(indices[0]):
+        if idx < len(faiss_metadata):
+            # Convert metadata to list if needed
+            meta = faiss_metadata[idx]
+            if isinstance(meta, (np.ndarray, list)):
+                meta = meta.tolist()
+            results.append({
+                "rank": i + 1,
+                "score": float(distances[0][i]),
+                "restrictions": meta
+            })
+    return results
+
+#########################
+#   ADA POLICIES
+#########################
+
+def get_ada_policy(sys_msg):
+    with open('ada_policies.json', 'r') as file:
+        ada_policies = json.load(file)
+    ada_policies = paraphrase_prompt(ada_policies, sys_msg)
+    return ada_policies
+
+#########################
+#   FLASK APP & ROUTES
+#########################
+
+app = Flask(__name__)
+CORS(app)
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+# Initialize global data
 parsed_data, model, output_columns, lot_names, map_prefix_to_permission = preprocessing_data(
     FILE_PATH, MODEL_PATH, PERM_PATH
 )
@@ -503,9 +587,6 @@ def validate_datetime():
         message=paraphrase_prompt(f"Valid day/time found: {found_day} {matched_interval[0]}-{matched_interval[1]}")
     ), 200
 
-
-
-
 @app.route('/check_eligibility', methods=['POST'])
 def check_eligibility():
     data = request.get_json(force=True)
@@ -610,90 +691,6 @@ def check_eligibility():
             if any(lot.startswith(x) for x in ["Lot 1","Lot 3","Lot 4","Lot 6","Lot 9","Lot 11"]):
                 msg += " Commuter passes can't park between 3-5 AM in lots 1,3,4,6,9,11."
         return jsonify(allowed=False, message=msg), 200
-
-#########################
-#   NEW HELPER FUNCTIONS 
-#########################
-
-def check_for_closures(lot, date_input):
-    BOT_NAME = "Parking Assistant"
-    try:
-        if date_input.lower() == 'today':
-            input_date = datetime.now()
-        elif date_input.lower() == 'tomorrow':
-            input_date = datetime.now() + timedelta(days=1)
-        else:
-            input_date = datetime.strptime(date_input, '%m-%d-%Y')
-    except ValueError:
-        return False, f"{BOT_NAME}: The date format is incorrect. Please try again."
-
-    # First check existing closures from CSV
-    lot_closures = closures_df[closures_df['Affected Lot/Populations'] == lot]
-    for _, row in lot_closures.iterrows():
-        start_date = datetime.strptime(row['Start Date'], '%m/%d/%Y')
-        end_date = datetime.strptime(row['End Date'], '%m/%d/%Y')
-        if start_date <= input_date <= end_date:
-            return True, "Construction Closure: This lot is currently closed due to construction."
-
-    # Check for closures from get_new_rules API
-    try:
-        response = requests.get('http://localhost:1000/get_new_rules')
-        rules_dict = response.json()
-        
-        if 'Closed' in rules_dict:
-            if lot in rules_dict['Closed']:
-                # Check if there's an active closure
-                if 'active' in rules_dict['Closed'][lot]:
-                    closure_data = rules_dict['Closed'][lot]['active']
-                    end_day = datetime.strptime(closure_data['End Day'], '%Y-%m-%d')
-                    
-                    # If the input date is before or equal to end day, the lot is closed
-                    if input_date.date() <= end_day.date():
-                        return True, "Administrative Closure: This lot is currently closed due to a new parking rule"
-
-    except Exception as e:
-        print(f"Error checking API closures: {e}")
-        # Continue with normal flow if API check fails
-        pass
-
-    return False, None
-
-def get_parking_details(lot_name):
-    lot_info = parking_restrictions_df[parking_restrictions_df["Parking Lot / Zone Name"] == lot_name]
-    if lot_info.empty:
-        return "No additional parking details found for this lot."
-    relevant_columns = ["Restrictions", "Required", "Parking Restrictions", "Overflow Lot"]
-    selected_data = lot_info.iloc[0][relevant_columns].dropna()
-    details_text = "\n".join([f"**{col}**: {val}" for col, val in selected_data.items()])
-    return details_text
-
-def search_parking_restrictions(query_json, top_k=3):
-    query_text = json.dumps(query_json, indent=2)
-    query_embedding = search_model.encode([query_text], convert_to_numpy=True)
-    distances, indices = faiss_index.search(query_embedding.astype(np.float32), top_k)
-    results = []
-    for i, idx in enumerate(indices[0]):
-        if idx < len(faiss_metadata):
-            # Convert metadata to list if needed
-            meta = faiss_metadata[idx]
-            if isinstance(meta, (np.ndarray, list)):
-                meta = meta.tolist()
-            results.append({
-                "rank": i + 1,
-                "score": float(distances[0][i]),
-                "restrictions": meta
-            })
-    return results
-
-def get_ada_policy(sys_msg):
-    with open('ada_policies.json', 'r') as file:
-        ada_policies = json.load(file)
-    ada_policies = paraphrase_prompt(ada_policies, sys_msg)
-    return ada_policies
-
-#########################
-#   NEW API ENDPOINTS
-#########################
 
 @app.route('/paraphrase', methods=['POST'])
 def paraphrase_endpoint():

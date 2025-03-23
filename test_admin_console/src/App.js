@@ -153,7 +153,7 @@ function CategoryTable({ categoryName, categoryData, onDelete, viewMode }) {
   if (rows.length === 0) {
     return (
       <div className="emptyStateMessage">
-        {`No ${viewMode === 'active' ? 'active' : 'pending'} rules for ${categoryName} category`}
+        {`No ${viewMode === 'active' ? 'active' : 'scheduled'} rules in this category`}
       </div>
     );
   }
