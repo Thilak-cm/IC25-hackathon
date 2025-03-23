@@ -203,8 +203,14 @@
    ============================= */
 .alertLogHeader {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.alertLogHeader h2 {
+  margin: 0;
+  color: #ffffff;
 }
 
 .alertRow {
@@ -385,32 +391,129 @@ select option {
    8) Two-column layout with a fixed left image panel
    ============================= */
 .layoutContainer {
-  display: block;
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
 }
 
 .leftPanel {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 700px;
+  position: relative;
+  min-width: 300px; /* Minimum width */
   height: 100vh;
   background: url('assets/image2.png') center center / cover no-repeat;
   background-color: #2e2e2e;
-  transition: transform 0.3s ease;
+  flex-shrink: 0;
+  user-select: none;
 }
 
-.leftPanel:hover {
-  transform: scale(1.05);
+/* Update divider styles */
+.divider {
+  width: 8px;
+  background-color: #333;
+  cursor: col-resize;
+  position: relative;
+  flex-shrink: 0;
+  z-index: 100; /* Add z-index to ensure it's above other elements */
 }
 
-.leftPanelOverlay {
-  display: none;
+.divider:hover {
+  background-color: #E11933;
+}
+
+/* Add a class for when dragging is active */
+.dragging {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  cursor: col-resize;
 }
 
 .rightPanel {
-  margin-left: 700px;
+  flex: 1;
   padding: 20px;
   background-color: #181818;
   min-height: 100vh;
   overflow-y: auto;
+}
+
+/* Add styles for filter controls */
+.filterControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filterLabel {
+  color: #868686;
+  font-size: 14px;
+}
+
+.filterSelect,
+.limitSelect {
+  padding: 8px 12px;
+  border: 1px solid #555;
+  border-radius: 30px;
+  background-color: #181818;
+  color: #868686;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.customLimitInput {
+  padding: 8px 12px;
+  border: 1px solid #555;
+  border-radius: 30px;
+  background-color: #181818;
+  color: #868686;
+  width: 100px;
+}
+
+.dateFilterGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.dateFilter {
+  padding: 8px 12px;
+  border: 1px solid #555;
+  border-radius: 30px;
+  background-color: #181818;
+  color: #868686;
+}
+
+.clearAlertsButton {
+  padding: 8px 16px;
+  border-radius: 30px;
+  background-color: #E11933;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin-left: auto; /* Push to the right */
+}
+
+/* Hover states */
+.filterSelect:hover,
+.limitSelect:hover,
+.customLimitInput:hover,
+.dateFilter:hover {
+  border-color: #E11933;
+}
+
+.clearAlertsButton:hover {
+  background-color: #d43e3e;
+}
+
+/* Style the datetime picker icon */
+.dateFilter::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+.emptyStateMessage {
+  color: #ffffff;
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
 }

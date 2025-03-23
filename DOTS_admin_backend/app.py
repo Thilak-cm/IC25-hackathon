@@ -222,6 +222,38 @@ def resolve_intervals(new_interval, new_perms, old_interval, old_perms):
         out[interval_str] = old_perms
     return out
 
+def combine_active_and_pending_rules(active_rules, pending_list):
+    """
+    Combines active rules and pending updates into a single structure
+    with 'active' and 'pending' subfields for each lot.
+    """
+    combined = {}
+    
+    # First, add active rules
+    for category, content in active_rules.items():
+        if category not in combined:
+            combined[category] = {}
+        for lot, rule in content.items():
+            if lot not in combined[category]:
+                combined[category][lot] = {}
+            combined[category][lot]['active'] = rule
+
+    # Then add pending rules
+    for pending in pending_list:
+        category = pending['category']
+        lot = pending['lot']
+        if category not in combined:
+            combined[category] = {}
+        if lot not in combined[category]:
+            combined[category][lot] = {}
+        
+        # Convert datetime to string format
+        pending_copy = pending.copy()
+        pending_copy['in_effect_from'] = pending_copy['in_effect_from'].strftime("%Y-%m-%d %H:%M:%S")
+        combined[category][lot]['pending'] = pending_copy
+
+    return combined
+
 def serialize_special_rules(rules):
     """
     For 'Allowed'/'Not Allowed', convert tuple keys to "start|end".
@@ -233,12 +265,23 @@ def serialize_special_rules(rules):
             cat_dict = {}
             for lot, rd in content.items():
                 new_rd = {}
-                for k, v in rd.items():
-                    if isinstance(k, tuple):
-                        new_k = f"{k[0]}|{k[1]}"
-                        new_rd[new_k] = v
-                    else:
-                        new_rd[k] = v
+                # Handle both direct rules and active/pending structure
+                if 'active' in rd or 'pending' in rd:
+                    if 'active' in rd:
+                        new_rd['active'] = {
+                            (f"{k[0]}|{k[1]}" if isinstance(k, tuple) else k): v 
+                            for k, v in rd['active'].items()
+                        }
+                    if 'pending' in rd:
+                        new_rd['pending'] = rd['pending']
+                else:
+                    # Handle direct rules (backwards compatibility)
+                    for k, v in rd.items():
+                        if isinstance(k, tuple):
+                            new_k = f"{k[0]}|{k[1]}"
+                            new_rd[new_k] = v
+                        else:
+                            new_rd[k] = v
                 cat_dict[lot] = new_rd
             serialized[cat] = cat_dict
         else:
@@ -391,13 +434,15 @@ def get_lot_perms():
         "PERM_NAMES": PERMS
     })
 
-
 ################################################################
 # Flask endpoints
 ################################################################
-@app.route('/get_restrictions', methods=['GET'])
-def get_restrictions():
-    return jsonify(serialize_special_rules(special_rules))
+@app.route('/get_new_rules', methods=['GET'])
+def get_new_rules():
+    # First combine active and pending rules
+    combined = combine_active_and_pending_rules(special_rules, pending_updates)
+    # Then serialize the combined structure
+    return jsonify(serialize_special_rules(combined))
 
 @app.route('/log_alert', methods=['POST'])
 def log_alert():
@@ -481,7 +526,8 @@ def update_rule():
                     "perms": perms,
                     "in_effect_from": in_effect_from,
                     "end_day": end_day,
-                    "end_time": end_time
+                    "end_time": end_time,
+                    "status": "pending"
                 })
             return jsonify({"status": "pending update scheduled"}), 200
 
@@ -507,7 +553,8 @@ def update_rule():
                     "perms": [],
                     "in_effect_from": in_effect_from,
                     "end_day": end_day,
-                    "end_time": end_time
+                    "end_time": end_time,
+                    "status": "pending"
                 })
             return jsonify({"status": "pending update scheduled"}), 200
 
@@ -533,7 +580,8 @@ def update_rule():
                 "perms": perms,
                 "in_effect_from": in_effect_from,
                 "end_day": end_day,
-                "end_time": end_time
+                "end_time": end_time,
+                "status": "pending"
             })
             return jsonify({"status": "pending update scheduled"}), 200
     else:
@@ -562,6 +610,7 @@ def get_pending_updates():
     for up in pending_updates:
         copyup = up.copy()
         copyup["in_effect_from"] = copyup["in_effect_from"].strftime("%Y-%m-%d %H:%M:%S")
+        copyup["status"] = "pending"
         out.append(copyup)
     return jsonify(out)
 

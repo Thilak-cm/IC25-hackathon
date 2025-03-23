@@ -80,15 +80,22 @@ function Notification({ notification }) {
 /*****************************************************************
  * CategoryTable component for showing rules with Delete button
  *****************************************************************/
-function CategoryTable({ categoryName, categoryData, onDelete }) {
+function CategoryTable({ categoryName, categoryData, onDelete, viewMode }) {
+  console.log('CategoryTable received:', {
+    categoryName,
+    categoryData,
+    viewMode
+  });
+
   if (!categoryData) return null;
 
-  if (categoryName === 'Allowed' || categoryName === 'Not Allowed') {
-    const rows = [];
-    Object.entries(categoryData).forEach(([lot, ruleObj]) => {
-      const endDay = ruleObj['End Day'] || '';
-      const endTime = ruleObj['End Time'] || '';
-      Object.entries(ruleObj).forEach(([key, value]) => {
+  const rows = [];
+  Object.entries(categoryData).forEach(([lot, ruleObj]) => {
+    // Only add active rules if viewing active
+    if (viewMode === 'active' && ruleObj.active) {
+      const endDay = ruleObj.active['End Day'] || '';
+      const endTime = ruleObj.active['End Time'] || '';
+      Object.entries(ruleObj.active).forEach(([key, value]) => {
         if (key === 'End Day' || key === 'End Time') return;
         rows.push({
           lot,
@@ -96,135 +103,90 @@ function CategoryTable({ categoryName, categoryData, onDelete }) {
           permits: Array.isArray(value) ? value.join(', ') : '',
           endDay,
           endTime,
+          status: 'active'
         });
       });
-    });
+    }
+    // Only add pending rules if viewing pending
+    if (viewMode === 'pending' && ruleObj.pending) {
+      rows.push({
+        lot,
+        timeFrame: Array.isArray(ruleObj.pending.time_slot) 
+          ? ruleObj.pending.time_slot.join('|') 
+          : ruleObj.pending.time_slot,
+        permits: Array.isArray(ruleObj.pending.perms) 
+          ? ruleObj.pending.perms.join(', ') 
+          : '',
+        endDay: ruleObj.pending.end_day,
+        endTime: ruleObj.pending.end_time,
+        startDay: ruleObj.pending.Start_Day,
+        startTime: ruleObj.pending.Start_Time,
+        status: 'pending'
+      });
+    }
+  });
+
+  if (rows.length === 0) {
     return (
-      <table className="table">
-        <thead>
-          <tr>
-            <th className="th">Lot</th>
-            <th className="th">Time Frame</th>
-            <th className="th">Permits</th>
-            <th className="th">End Day</th>
-            <th className="th">End Time</th>
-            <th className="th deleteColumn deleteHeader"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td className="td">{r.lot}</td>
-              <td className="td">{r.timeFrame}</td>
-              <td className="td">{r.permits}</td>
-              <td className="td">{r.endDay}</td>
-              <td className="td">{r.endTime}</td>
-              <td className="td deleteColumn">
-                <button
-                  className="deleteButton"
-                  onClick={() =>
-                    onDelete({
-                      category: categoryName,
-                      lot: r.lot,
-                      time_frame: r.timeFrame,
-                    })
-                  }
-                >
-                  &#10005;
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="emptyStateMessage">
+        {`No ${viewMode === 'active' ? 'active' : 'pending'} rules for ${categoryName} category`}
+      </div>
     );
   }
 
-  if (categoryName === 'Closed') {
-    const rows = Object.entries(categoryData).map(([lot, obj]) => ({
-      lot,
-      endDay: obj['End Day'] || '',
-      endTime: obj['End Time'] || '',
-    }));
-    return (
-      <table className="table">
-        <thead>
-          <tr>
-            <th className="th">Lot</th>
-            <th className="th">End Day</th>
-            <th className="th">End Time</th>
-            <th className="th deleteColumn deleteHeader"></th>
+  // Adjust columns based on view mode
+  return (
+    <table className="table">
+      <thead>
+        <tr>
+          <th className="th">Lot</th>
+          <th className="th">Time Frame</th>
+          <th className="th">Permits</th>
+          {viewMode === 'pending' && (
+            <>
+              <th className="th">Start Day</th>
+              <th className="th">Start Time</th>
+            </>
+          )}
+          <th className="th">End Day</th>
+          <th className="th">End Time</th>
+          <th className="th deleteColumn deleteHeader"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <tr key={i}>
+            <td className="td">{r.lot}</td>
+            <td className="td">{r.timeFrame}</td>
+            <td className="td">{r.permits}</td>
+            {viewMode === 'pending' && (
+              <>
+                <td className="td">{r.startDay}</td>
+                <td className="td">{r.startTime}</td>
+              </>
+            )}
+            <td className="td">{r.endDay}</td>
+            <td className="td">{r.endTime}</td>
+            <td className="td deleteColumn">
+              <button
+                className="deleteButton"
+                onClick={() =>
+                  onDelete({
+                    category: categoryName,
+                    lot: r.lot,
+                    time_frame: r.timeFrame,
+                    status: r.status
+                  })
+                }
+              >
+                &#10005;
+              </button>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td className="td">{r.lot}</td>
-              <td className="td">{r.endDay}</td>
-              <td className="td">{r.endTime}</td>
-              <td className="td deleteColumn">
-                <button
-                  className="deleteButton"
-                  onClick={() =>
-                    onDelete({ category: categoryName, lot: r.lot })
-                  }
-                >
-                  &#10005;
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  }
-
-  if (categoryName === 'New Permits') {
-    const rows = Object.entries(categoryData).map(([name, obj]) => ({
-      name,
-      perms: (obj['Perms'] || []).join(', '),
-      endDay: obj['End Day'] || '',
-      endTime: obj['End Time'] || '',
-    }));
-    return (
-      <table className="table">
-        <thead>
-          <tr>
-            <th className="th">Name</th>
-            <th className="th">Permits</th>
-            <th className="th">End Day</th>
-            <th className="th">End Time</th>
-            <th className="th deleteColumn deleteHeader"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td className="td">{r.name}</td>
-              <td className="td">{r.perms}</td>
-              <td className="td">{r.endDay}</td>
-              <td className="td">{r.endTime}</td>
-              <td className="td deleteColumn">
-                <button
-                  className="deleteButton"
-                  onClick={() =>
-                    onDelete({
-                      category: categoryName,
-                      new_permit_name: r.name,
-                    })
-                  }
-                >
-                  &#10005;
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  }
-
-  return null;
+        ))}
+      </tbody>
+    </table>
+  );
 }
 
 /*****************************************************************
@@ -263,12 +225,10 @@ function App() {
   
   // Backend data for rules and scheduled updates
   const [rules, setRules] = useState(null);
-  const [scheduledRules, setScheduledRules] = useState(null);
   const [alertLogs, setAlertLogs] = useState([]);
   
   // Toggles for displaying rules tables
   const [showRules, setShowRules] = useState(false);
-  const [showScheduled, setShowScheduled] = useState(false);
   
   // Which category's rules to display in the rules table
   const [rulesCategoryToShow, setRulesCategoryToShow] = useState('Allowed');
@@ -276,6 +236,23 @@ function App() {
   // Notifications (vertical stack on right)
   const [notifications, setNotifications] = useState([]);
   const prevAlertIdsRef = useRef([]);
+  
+  // 1. Change state to track which view we want
+  const [viewMode, setViewMode] = useState('none'); // 'none', 'active', or 'pending'
+  
+  // Add state for tracking divider position
+  const [isDragging, setIsDragging] = useState(false);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(700); // Initial width
+  const dividerRef = useRef(null);
+  
+  // Add these state variables at the top of your App component
+  const [logLimit, setLogLimit] = useState(0); // 0 means show all
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  
+  // Add state for filter type and custom limit
+  const [filterType, setFilterType] = useState('none'); // 'none', 'latest', 'date'
+  const [latestCount, setLatestCount] = useState(5); // Default to 5
   
   /*****************************************************************
    * Utility functions
@@ -376,6 +353,7 @@ function App() {
       return;
     }
     try {
+      // When the user clicks "Submit Rule"
       const res = await fetch('http://localhost:1000/update_rule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -385,7 +363,6 @@ function App() {
       if (res.ok) {
         addNotification('success', data.status || 'OK');
         if (showRules) fetchRules();
-        if (showScheduled) fetchScheduledRules();
       } else {
         addNotification('error', JSON.stringify(data));
       }
@@ -397,52 +374,43 @@ function App() {
   /*****************************************************************
    * Fetch functions
    *****************************************************************/
+  // When the user clicks "Fetch Current Rules"
   const fetchRules = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:1000/get_restrictions');
+      const res = await fetch('http://localhost:1000/get_new_rules');
       const data = await res.json();
       setRules(data);
     } catch (err) {
       addNotification('error', `Error fetching rules: ${err.message}`);
     }
   }, [addNotification]);
-  
-  const fetchScheduledRules = useCallback(async () => {
-    try {
-      const res = await fetch('http://localhost:1000/pending_updates');
-      const data = await res.json();
-      setScheduledRules(data);
-    } catch (err) {
-      addNotification('error', `Error fetching scheduled rules: ${err.message}`);
-    }
-  }, [addNotification]);
-  
+
+  // When the user clicks "Fetch Alerts"
   const fetchAlerts = useCallback(async () => {
     try {
       const res = await fetch('http://localhost:1000/get_alerts');
       const data = await res.json();
-      if (!data.length) {
-        prevAlertIdsRef.current = [];
-      } else {
-        const newIds = data.map((a) => a.id);
-        // If new alerts are found
-        if (
-          !prevAlertIdsRef.current.length ||
-          (newIds.length > prevAlertIdsRef.current.length &&
-            newIds[0] !== prevAlertIdsRef.current[0])
-        ) {
-          addNotification('error', `New Alert: ${data[0].alert_message}`);
-          if (showRules) fetchRules();
-          if (showScheduled) fetchScheduledRules();
-        }
-        prevAlertIdsRef.current = newIds;
-      }
       setAlertLogs(data);
+      
+      // Only show notifications for actual new alerts with valid messages
+      const currentAlertIds = data.map(alert => alert.id);
+      const newAlertIds = currentAlertIds.filter(id => !prevAlertIdsRef.current.includes(id));
+      
+      // Only show one notification for the newest alert if there are any new ones
+      const newestAlert = data.find(alert => alert.id === Math.max(...newAlertIds));
+      if (newestAlert) {
+        // Only show notification if we have a valid message
+        const message = `New ${newestAlert.category} rule for lot ${newestAlert.lot}`;
+        addNotification('info', message);
+      }
+      
+      prevAlertIdsRef.current = currentAlertIds;
     } catch (err) {
       addNotification('error', `Error fetching alerts: ${err.message}`);
     }
-  }, [addNotification, showRules, showScheduled, fetchRules, fetchScheduledRules]);
-  
+  }, [addNotification]);
+
+  // When the user clicks "Delete Alert"
   const deleteAlert = useCallback(
     async (alertId) => {
       try {
@@ -493,13 +461,6 @@ function App() {
     setShowRules((prev) => !prev);
   };
   
-  const toggleScheduled = async () => {
-    if (!showScheduled) {
-      await fetchScheduledRules();
-    }
-    setShowScheduled((prev) => !prev);
-  };
-  
   /*****************************************************************
    * On mount, fetch alerts periodically
    *****************************************************************/
@@ -510,11 +471,93 @@ function App() {
   }, [fetchAlerts]);
   
   /*****************************************************************
+   * Update the toggle functions
+   *****************************************************************/
+  const toggleActiveRules = () => {
+    if (viewMode === 'active') {
+      setViewMode('none');
+    } else {
+      setViewMode('active');
+      if (!rules) fetchRules();
+    }
+  };
+
+  const togglePendingRules = () => {
+    if (viewMode === 'pending') {
+      setViewMode('none');
+    } else {
+      setViewMode('pending');
+      if (!rules) fetchRules();
+    }
+  };
+  
+  // Add event handlers for divider dragging
+  const handleMouseDown = (e) => {
+    e.preventDefault(); // Prevent text selection
+    setIsDragging(true);
+    document.body.classList.add('dragging'); // Add dragging class to body
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging) return;
+    
+    const newWidth = Math.max(300, Math.min(e.clientX, window.innerWidth - 400));
+    setLeftPanelWidth(newWidth);
+  }, [isDragging]);
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    document.body.classList.remove('dragging'); // Remove dragging class
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  };
+  
+  // Make sure handleMouseMove is memoized with useCallback to prevent unnecessary re-renders
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove]);
+  
+  /*****************************************************************
+   * Add a function to filter logs
+   *****************************************************************/
+  const getFilteredLogs = () => {
+    let filtered = [...alertLogs];
+    
+    if (filterType === 'latest') {
+      filtered = filtered
+        .sort((a, b) => b.id - a.id)
+        .slice(0, latestCount);
+    } else if (filterType === 'date') {
+      if (startDate) {
+        filtered = filtered.filter(log => new Date(log.timestamp) >= new Date(startDate));
+      }
+      if (endDate) {
+        filtered = filtered.filter(log => new Date(log.timestamp) <= new Date(endDate));
+      }
+    }
+    
+    return filtered;
+  };
+  
+  /*****************************************************************
    * Render
    *****************************************************************/
   return (
     <div className="layoutContainer">
-      <div className="leftPanel">
+      <div 
+        className="leftPanel" 
+        style={{ width: `${leftPanelWidth}px` }}
+      >
         <div className="leftPanelOverlay">
           <div className="overlayBox">
             <img src="assets/logo.png" alt="Logo" className="overlayLogo" />
@@ -527,6 +570,11 @@ function App() {
           className="leftPanelImage"
         />
       </div>
+      <div 
+        className="divider"
+        onMouseDown={handleMouseDown}
+        ref={dividerRef}
+      />
       <div className="rightPanel">
         <div className="container">
           <h1 className="header">Parking Management Rule Updater</h1>
@@ -630,17 +678,19 @@ function App() {
           </form>
   
           <div className="buttonContainer">
-            <button onClick={toggleRules} className="button">
-              {showRules ? 'Hide Current Rules' : 'Fetch Current Rules'}
+            <button onClick={toggleActiveRules} className="button">
+              {viewMode === 'active' ? 'Hide Current Rules' : 'Show Current Rules'}
             </button>
-            <button onClick={toggleScheduled} className="button">
-              {showScheduled ? 'Hide Scheduled Rules' : 'Show Scheduled Rules'}
+            <button onClick={togglePendingRules} className="button">
+              {viewMode === 'pending' ? 'Hide Scheduled Rules' : 'Show Scheduled Rules'}
             </button>
           </div>
   
-          {showRules && rules && (
+          {viewMode !== 'none' && rules && (
             <div className="dataContainer">
-              <h2 className="header1">Current Rules</h2>
+              <h2 className="header1">
+                {viewMode === 'active' ? 'Current Rules' : 'Scheduled Rules'}
+              </h2>
               <div className="selectCategoryRow">
                 <label>Select Category:</label>
                 <select
@@ -658,71 +708,64 @@ function App() {
                 categoryName={rulesCategoryToShow}
                 categoryData={rules[rulesCategoryToShow]}
                 onDelete={deleteRule}
+                viewMode={viewMode}
               />
-            </div>
-          )}
-  
-          {showScheduled && scheduledRules && (
-            <div className="dataContainer">
-              <h2 className="header1">Scheduled Rules (Pending Updates)</h2>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th className="th">Category</th>
-                    <th className="th">Lot/Name</th>
-                    <th className="th">Time Slot</th>
-                    <th className="th">Perms</th>
-                    <th className="th">In Effect From</th>
-                    <th className="th">End Day</th>
-                    <th className="th">End Time</th>
-                    <th className="th">Delete</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scheduledRules.map((item, i) => {
-                    const ts = Array.isArray(item.time_slot)
-                      ? item.time_slot.join('|')
-                      : item.time_slot;
-                    const permsStr = Array.isArray(item.perms)
-                      ? item.perms.join(', ')
-                      : '';
-                    return (
-                      <tr key={i}>
-                        <td className="td">{item.category}</td>
-                        <td className="td">{item.lot}</td>
-                        <td className="td">{ts}</td>
-                        <td className="td">{permsStr}</td>
-                        <td className="td">{item.in_effect_from}</td>
-                        <td className="td">{item.end_day}</td>
-                        <td className="td">{item.end_time}</td>
-                        <td className="td">
-                          <button
-                            className="deleteButton"
-                            onClick={() =>
-                              deleteRule({
-                                category: item.category,
-                                lot: item.lot,
-                                time_frame: ts,
-                              })
-                            }
-                          >
-                            &#10005;
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
             </div>
           )}
   
           <div className="dataContainer">
             <div className="alertLogHeader">
-              <h2 className="header1">Alert Logs</h2>
-              <button className="button" onClick={clearAllAlerts}>
-                Clear All Alerts
-              </button>
+              <h2>Alert Logs</h2>
+              <div className="filterControls">
+                <div className="filterLabel">Filter by:</div>
+                <select 
+                  className="filterSelect"
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value);
+                    setStartDate('');
+                    setEndDate('');
+                  }}
+                >
+                  <option value="none">None</option>
+                  <option value="latest">Latest Entries</option>
+                  <option value="date">Date Range</option>
+                </select>
+                
+                {filterType === 'latest' && (
+                  <select 
+                    className="limitSelect"
+                    value={latestCount}
+                    onChange={(e) => setLatestCount(Number(e.target.value))}
+                  >
+                    <option value={5}>Latest 5</option>
+                    <option value={10}>Latest 10</option>
+                  </select>
+                )}
+                
+                {filterType === 'date' && (
+                  <div className="dateFilterGroup">
+                    <input
+                      type="datetime-local"
+                      className="dateFilter"
+                      placeholder="Start Date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                    <input
+                      type="datetime-local"
+                      className="dateFilter"
+                      placeholder="End Date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                )}
+                
+                <button className="clearAlertsButton" onClick={clearAllAlerts}>
+                  Clear All Alerts
+                </button>
+              </div>
             </div>
             <table className="table">
               <thead>
@@ -734,15 +777,15 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {alertLogs.map((a) => (
-                  <tr key={a.id} className="alertRow">
-                    <td className="td">{a.timestamp}</td>
+                {getFilteredLogs().map((log) => (
+                  <tr key={log.id} className="alertRow">
+                    <td className="td">{log.timestamp}</td>
                     <td className="td">
-                      {a.alert_message} <span className="alertId">(ID: {a.id})</span>
+                      {log.alert_message} <span className="alertId">(ID: {log.id})</span>
                     </td>
-                    <td className="td">{a.details}</td>
+                    <td className="td">{log.details}</td>
                     <td className="td">
-                      <button className="deleteButton" onClick={() => deleteAlert(a.id)}>
+                      <button className="deleteButton" onClick={() => deleteAlert(log.id)}>
                         &#10005;
                       </button>
                     </td>
