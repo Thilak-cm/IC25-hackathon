@@ -306,6 +306,8 @@ function App() {
    * Delete Rule handler – called from table rows
    *****************************************************************/
   const deleteRule = async (payload) => {
+    // Add status to payload based on whether it's an active or pending rule
+    payload.status = payload.status || 'active';  // default to active if not specified
     try {
       const res = await fetch('http://localhost:1000/delete_rule', {
         method: 'POST',

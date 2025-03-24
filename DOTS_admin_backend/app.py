@@ -657,11 +657,22 @@ def delete_rule():
             return jsonify({"error": "Rule not found"}), 404
     elif cat == "Closed":
         lot = data.get("lot")
-        if cat in special_rules and lot in special_rules[cat]:
-            del special_rules[cat][lot]
-            return jsonify({"status": "deleted"}), 200
-        else:
-            return jsonify({"error": "Rule not found"}), 404
+        status = data.get("status")  # 'active' or 'pending'
+        if not lot:
+            return jsonify({"error": "Missing lot"}), 400
+            
+        if status == "pending":
+            # Find and remove from pending_updates
+            for update in pending_updates[:]:
+                if update["category"] == cat and update["lot"] == lot:
+                    pending_updates.remove(update)
+                    return jsonify({"status": "deleted"}), 200
+        else:  # status == "active" or not specified
+            if cat in special_rules and lot in special_rules[cat]:
+                del special_rules[cat][lot]
+                return jsonify({"status": "deleted"}), 200
+                
+        return jsonify({"error": "Rule not found"}), 404
     elif cat == "New Permits":
         new_permit_name = data.get("new_permit_name")
         if cat in special_rules and new_permit_name in special_rules[cat]:
