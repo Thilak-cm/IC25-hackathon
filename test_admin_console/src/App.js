@@ -251,9 +251,6 @@ function App() {
   const [rules, setRules] = useState(null);
   const [alertLogs, setAlertLogs] = useState([]);
   
-  // Toggles for displaying rules tables
-  const [showRules, setShowRules] = useState(false);
-  
   // Which category's rules to display in the rules table
   const [rulesCategoryToShow, setRulesCategoryToShow] = useState('Allowed');
   
@@ -270,13 +267,15 @@ function App() {
   const dividerRef = useRef(null);
   
   // Add these state variables at the top of your App component
-  const [logLimit, setLogLimit] = useState(0); // 0 means show all
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   
   // Add state for filter type and custom limit
   const [filterType, setFilterType] = useState('none'); // 'none', 'latest', 'date'
   const [latestCount, setLatestCount] = useState(5); // Default to 5
+  
+  // First add this state at the top of your App component
+  const [errorMessage, setErrorMessage] = useState('');
   
   /*****************************************************************
    * Utility functions
@@ -316,7 +315,7 @@ function App() {
       const data = await res.json();
       if (res.ok) {
         addNotification('success', 'Rule deleted');
-        if (showRules) fetchRules();
+        if (viewMode !== 'none') fetchRules();
       } else {
         addNotification('error', JSON.stringify(data));
       }
@@ -330,10 +329,30 @@ function App() {
    *****************************************************************/
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!inEffectFrom || !inEffectTo) {
-      addNotification('error', 'Please fill "In Effect From" and "In Effect To".');
+    
+    // Clear any existing error message
+    setErrorMessage('');
+    
+    // Validate lot selection
+    if (lots.length === 0) {
+      setErrorMessage('Error: Please select at least one lot');
       return;
     }
+
+    // Validate dates are provided
+    if (!inEffectFrom || !inEffectTo) {
+      setErrorMessage('Error: Please fill in both date fields');
+      return;
+    }
+
+    // Validate date order
+    const fromDate = new Date(inEffectFrom);
+    const toDate = new Date(inEffectTo);
+    if (fromDate >= toDate) {
+      setErrorMessage('Error: "In Effect From" must be before "In Effect To"');
+      return;
+    }
+
     let end_day = '';
     let end_time = '';
     const parts = inEffectTo.split('T');
@@ -385,13 +404,13 @@ function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        addNotification('success', data.status || 'OK');
-        if (showRules) fetchRules();
+        addNotification('success', data.status === 'pending update scheduled' ? 'Scheduled Rule Updated' : 'Rule Updated');
+        if (viewMode !== 'none') fetchRules();
       } else {
-        addNotification('error', JSON.stringify(data));
+        setErrorMessage(`Error: ${JSON.stringify(data)}`);
       }
     } catch (err) {
-      addNotification('error', err.message);
+      setErrorMessage(`Error: ${err.message}`);
     }
   };
   
@@ -476,25 +495,6 @@ function App() {
   };
   
   /*****************************************************************
-   * Toggle display for rules tables
-   *****************************************************************/
-  const toggleRules = async () => {
-    if (!showRules) {
-      await fetchRules();
-    }
-    setShowRules((prev) => !prev);
-  };
-  
-  /*****************************************************************
-   * On mount, fetch alerts periodically
-   *****************************************************************/
-  useEffect(() => {
-    fetchAlerts();
-    const t = setInterval(fetchAlerts, 5000);
-    return () => clearInterval(t);
-  }, [fetchAlerts]);
-  
-  /*****************************************************************
    * Update the toggle functions
    *****************************************************************/
   const toggleActiveRules = () => {
@@ -531,25 +531,22 @@ function App() {
     setLeftPanelWidth(newWidth);
   }, [isDragging]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-    document.body.classList.remove('dragging'); // Remove dragging class
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
-  };
+  }, [handleMouseMove]);
   
-  // Make sure handleMouseMove is memoized with useCallback to prevent unnecessary re-renders
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
-    
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, handleMouseMove]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
   
   /*****************************************************************
    * Add a function to filter logs
@@ -696,9 +693,25 @@ function App() {
               onChange={(e) => setInEffectTo(e.target.value)}
             />
   
-            <button type="submit" className="button">
-              Submit Rule
-            </button>
+            <div style={{ marginBottom: '1rem' }}>
+              <button type="submit" className="button">
+                Submit Rule
+              </button>
+              {errorMessage && (
+                <div style={{ 
+                  color: '#dc3545',
+                  marginTop: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span style={{ fontSize: '18px' }}>⚠️</span>
+                  {errorMessage.replace('Error: ', '')}
+                </div>
+              )}
+            </div>
           </form>
   
           <div className="buttonContainer">
