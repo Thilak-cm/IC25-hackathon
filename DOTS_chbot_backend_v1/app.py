@@ -685,13 +685,13 @@ def check_eligibility():
                     "main_message": paraphrase_prompt("Commuter passes can't park between 3-5 AM in lots 1,3,4,6,9,11.")
                 }), 200
             
+        print(f"tacos: {time_interval[1]}")
         return jsonify({
             "allowed": True,
             "main_message": paraphrase_prompt(f"For permit {prefix}: Parking is prohibited for {permit} in {lot}."),
             "lots_info": paraphrase_prompt(f"Only the following lots can be used for parking: {str(map_prefix_to_permission[prefix]['Lots'])}"),
             "time_info": paraphrase_prompt(f"You can park here until {time_interval[1]}!", sys_msg="""You are a time converting assistant. 
-                                        Extract the time from the user input and convert it to something user friendly. So if the user says 
-                                        16:00:00, you should return 4:00 PM, or if its 6:59:59, you should return 7:00 PM. Feel free to 
+                                        Extract the time from the user input and convert it to something user friendly. Feel free to 
                                         paraphrase the sentence to make it more user friendly."""),
         }), 200
     else:
