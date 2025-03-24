@@ -582,7 +582,6 @@ function App() {
         <div className="leftPanelOverlay">
           <div className="overlayBox">
             <img src="assets/logo.png" alt="Logo" className="overlayLogo" />
-            <h2 className="overlayHeading">Parking Management Rule Updater</h2>
           </div>
         </div>
         <img
