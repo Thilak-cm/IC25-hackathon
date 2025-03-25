@@ -692,13 +692,14 @@ def check_eligibility():
             "lots_info": paraphrase_prompt(f"Only the following lots can be used for parking: {str(map_prefix_to_permission[prefix]['Lots'])}"),
             "time_info": paraphrase_prompt(f"You can park here until {time_interval[1]}!", sys_msg="""You are a time converting assistant. 
                                         Extract the time from the user input and convert it to something user friendly. Feel free to 
-                                        paraphrase the sentence to make it more user friendly."""),
+                                        paraphrase the sentence to make it more user friendly. For ex: 16:00:00 should be 4:00 PM, 6:59:59 should be 7:00 PM."""),
         }), 200
     else:
         response = {
             "allowed": False,
             "main_message": paraphrase_prompt(f"Parking is NOT allowed for {lot_perm} in {lot} on {day}."),
-            "permitted_info": paraphrase_prompt(f"Only {allowed_permits} can park.")
+            "permitted_info": paraphrase_prompt(f"Only {allowed_permits} can park."),
+            "time_info": "None"
         }
         
         if 'Commuter' in from_prefix_fullname and interval_tuple == ("3:00:00","04:59:59"):
